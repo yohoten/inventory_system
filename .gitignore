@@ -1,0 +1,50 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ===== 虚拟环境 =====
+venv/
+env/
+.venv/
+ENV/
+
+# ===== 打包（PyInstaller）=====
+build/
+dist/
+*.spec
+
+# ===== 运行时生成的数据与日志（不纳入版本控制）=====
+# 业务数据库（含真实库存数据，切勿提交）
+inventory.db
+*.db
+*.sqlite3
+
+# 运行日志
+*.log
+error_log.txt
+operation_log.log
+
+# 系统配置（含管理员默认密码等敏感信息，首次运行会自动生成）
+system_config.json
+
+# 备份文件
+*.bak
+*.backup
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== Excel 导出产物 =====
+*.xlsx.tmp
+exports/

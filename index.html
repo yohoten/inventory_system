@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>进销存管理系统 - Inventory System</title>
+<meta name="description" content="基于 Python Tkinter 的现代化进销存管理系统，支持进货/出货管理、库存监控、查询统计、Excel 导出与打印预览。">
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --bg-panel: #16213e;
+    --bg-card: #0f3460;
+    --accent: #e94560;
+    --accent-dark: #c73652;
+    --text: #eaeaea;
+    --text-dim: #9aa4b8;
+    --border: rgba(255, 255, 255, 0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ===== Hero ===== */
+  header {
+    background: linear-gradient(160deg, var(--bg-panel) 0%, var(--bg) 70%);
+    border-bottom: 1px solid var(--border);
+    padding: 72px 0 56px;
+    text-align: center;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(233, 69, 96, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(233, 69, 96, 0.4);
+    border-radius: 999px;
+    padding: 4px 16px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  header .logo {
+    width: 72px; height: 72px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 20px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(233, 69, 96, 0.35);
+  }
+  h1 { font-size: 40px; font-weight: 700; letter-spacing: 1px; }
+  header p.sub {
+    color: var(--text-dim);
+    font-size: 17px;
+    max-width: 640px;
+    margin: 16px auto 32px;
+  }
+  .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    text-decoration: none;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(233, 69, 96, 0.35); }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-ghost { border: 1px solid var(--border); color: var(--text); background: transparent; }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ===== Sections ===== */
+  section { padding: 64px 0; }
+  section:nth-of-type(even) { background: var(--bg-panel); }
+  h2 {
+    font-size: 26px;
+    margin-bottom: 36px;
+    padding-left: 14px;
+    border-left: 4px solid var(--accent);
+  }
+
+  /* Features */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 22px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 26px 24px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .card:hover { transform: translateY(-4px); border-color: rgba(233, 69, 96, 0.5); }
+  .card .icon { font-size: 30px; margin-bottom: 12px; }
+  .card h3 { font-size: 17px; margin-bottom: 8px; color: #fff; }
+  .card p { font-size: 14px; color: var(--text-dim); }
+
+  /* Tech stack table */
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  th { color: var(--accent); font-weight: 600; white-space: nowrap; }
+  td:first-child { color: var(--text-dim); white-space: nowrap; }
+  tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+  /* Quick start */
+  pre {
+    background: #0d0d1a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
+    color: #c8d3f0;
+  }
+  pre .cm { color: #5b667d; }
+  pre .hl { color: var(--accent); }
+
+  /* Config note */
+  .note {
+    background: rgba(233, 69, 96, 0.08);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 24px;
+  }
+  .note strong { color: var(--accent); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 28px 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  footer .license { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <span class="badge">PYTHON · TKINTER · SQLITE</span>
+    <div class="logo">ERP</div>
+    <h1>进销存管理系统</h1>
+    <p class="sub">一套面向中小企业的轻量级进销存解决方案 —— 进货、出货、库存、统计一体化管理，支持 Excel 导出与打印预览。</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#quickstart">快速开始</a>
+      <a class="btn btn-ghost" href="#features">功能特性</a>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="container">
+    <h2>核心功能</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="icon">📥</div>
+        <h3>进货管理</h3>
+        <p>记录商品进货信息，录入后自动更新库存数量，支持历史进货记录追溯。</p>
+      </div>
+      <div class="card">
+        <div class="icon">📤</div>
+        <h3>出货管理</h3>
+        <p>管理商品出库流程，出货时实时扣减库存，防止超卖。</p>
+      </div>
+      <div class="card">
+        <div class="icon">📦</div>
+        <h3>库存管理</h3>
+        <p>实时查看当前库存状态，低库存自动预警（默认阈值 10 件）。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔍</div>
+        <h3>查询统计</h3>
+        <p>按年份维度查询进货、出货记录与库存情况，快速掌握经营数据。</p>
+      </div>
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>数据导出</h3>
+        <p>查询结果一键导出为 Excel 格式（openpyxl），便于二次分析与存档。</p>
+      </div>
+      <div class="card">
+        <div class="icon">🖨️</div>
+        <h3>打印预览</h3>
+        <p>内置数据打印预览功能，所见即所得，输出规范的业务单据。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2>技术栈</h2>
+    <table>
+      <tr><th>类别</th><th>说明</th></tr>
+      <tr><td>语言</td><td>Python 3.7+</td></tr>
+      <tr><td>GUI 框架</td><td>Tkinter / ttk</td></tr>
+      <tr><td>数据库</td><td>SQLite3（inventory.db）</td></tr>
+      <tr><td>数据处理</td><td>openpyxl（Excel 读写）</td></tr>
+      <tr><td>打包工具</td><td>PyInstaller（支持单文件 / 目录模式）</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="container">
+    <h2>快速开始</h2>
+<pre><span class="cm"># 1. 安装依赖</span>
+pip install -r requirements.txt
+
+<span class="cm"># 2. 运行主程序</span>
+python inventory_system.py
+
+<span class="cm"># 3. Windows 用户可直接双击 START.bat（自动检测环境并补装依赖）</span>
+
+<span class="cm"># 4. 打包为独立可执行文件（可选）</span>
+python build.py --mode single --windowed --clean</pre>
+    <div class="note">
+      <strong>默认登录：</strong>管理员账号 <code>admin</code>，初始密码 <code>123456</code>。
+      登录后请及时修改密码；配置文件为 <code>system_config.json</code>。
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    进销存管理系统 · MIT License · Powered by Python &amp; Tkinter
+  </div>
+</footer>
+
+</body>
+</html>
