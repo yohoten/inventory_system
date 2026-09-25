@@ -3,246 +3,609 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>进销存管理系统 - Inventory System</title>
-<meta name="description" content="基于 Python Tkinter 的现代化进销存管理系统，支持进货/出货管理、库存监控、查询统计、Excel 导出与打印预览。">
+<title>进销存管理系统 · Inventory Ledger System</title>
+<meta name="description" content="基于 Python Tkinter 的进销存管理系统：进货、出货、库存、对账一体化，支持 Excel 导出与打印预览。">
+
+<!-- 字体：Anton（拉丁展示）+ Noto Sans SC（正文/中文展示）+ JetBrains Mono（数据） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
 <style>
-  :root {
-    --bg: #1a1a2e;
-    --bg-panel: #16213e;
-    --bg-card: #0f3460;
-    --accent: #e94560;
-    --accent-dark: #c73652;
-    --text: #eaeaea;
-    --text-dim: #9aa4b8;
-    --border: rgba(255, 255, 255, 0.08);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.7;
-  }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+/* ============================================================
+   1. 设计令牌 — 所有颜色 / 字阶 / 间距 / 阴影 / 动效集中于此
+   ============================================================ */
+:root {
+  /* 色彩：主色（深藏青）约 60%，表面色 30%，强调红仅 10% */
+  --color-bg: #12122a;
+  --color-surface: #181835;
+  --color-surface-2: #1e1e40;
+  --color-text: #eceaf2;
+  --color-muted: #9aa0b8;          /* 对 --color-bg 对比度 ≈ 6.8:1 */
+  --color-accent: #e94560;         /* 品牌红：唯一强调色，只给关键动作与告警 */
+  --color-ok: #4ade80;             /* 语义状态色：库存正常 */
+  --color-border: rgba(236, 234, 242, 0.12);   /* 发丝线 */
+  --color-border-strong: rgba(236, 234, 242, 0.22);
 
-  /* ===== Hero ===== */
-  header {
-    background: linear-gradient(160deg, var(--bg-panel) 0%, var(--bg) 70%);
-    border-bottom: 1px solid var(--border);
-    padding: 72px 0 56px;
-    text-align: center;
-  }
-  .badge {
-    display: inline-block;
-    background: rgba(233, 69, 96, 0.15);
-    color: var(--accent);
-    border: 1px solid rgba(233, 69, 96, 0.4);
-    border-radius: 999px;
-    padding: 4px 16px;
-    font-size: 13px;
-    letter-spacing: 2px;
-    margin-bottom: 20px;
-  }
-  header .logo {
-    width: 72px; height: 72px;
-    background: var(--accent);
-    color: #fff;
-    font-weight: 700;
-    font-size: 20px;
-    display: inline-flex;
-    align-items: center; justify-content: center;
-    border-radius: 14px;
-    margin-bottom: 20px;
-    box-shadow: 0 8px 32px rgba(233, 69, 96, 0.35);
-  }
-  h1 { font-size: 40px; font-weight: 700; letter-spacing: 1px; }
-  header p.sub {
-    color: var(--text-dim);
-    font-size: 17px;
-    max-width: 640px;
-    margin: 16px auto 32px;
-  }
-  .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .btn {
-    display: inline-block;
-    padding: 12px 32px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    text-decoration: none;
-  }
-  .btn:hover { text-decoration: none; transform: translateY(-2px); }
-  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(233, 69, 96, 0.35); }
-  .btn-primary:hover { background: var(--accent-dark); }
-  .btn-ghost { border: 1px solid var(--border); color: var(--text); background: transparent; }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  /* 字阶（1.25 模块化比例） */
+  --fs-xs: 12px; --fs-sm: 14px; --fs-md: 16px;
+  --fs-lg: 20px; --fs-xl: 25px; --fs-2xl: 31px;
+  --fs-hero: clamp(44px, 7vw, 96px);
 
-  /* ===== Sections ===== */
-  section { padding: 64px 0; }
-  section:nth-of-type(even) { background: var(--bg-panel); }
-  h2 {
-    font-size: 26px;
-    margin-bottom: 36px;
-    padding-left: 14px;
-    border-left: 4px solid var(--accent);
-  }
+  /* 间距梯度 */
+  --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px;
+  --space-5: 40px; --space-6: 64px; --space-7: 96px;
 
-  /* Features */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 22px;
-  }
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 26px 24px;
-    transition: transform 0.15s ease, border-color 0.15s ease;
-  }
-  .card:hover { transform: translateY(-4px); border-color: rgba(233, 69, 96, 0.5); }
-  .card .icon { font-size: 30px; margin-bottom: 12px; }
-  .card h3 { font-size: 17px; margin-bottom: 8px; color: #fff; }
-  .card p { font-size: 14px; color: var(--text-dim); }
+  /* 圆角与阴影（三级高度） */
+  --radius-sm: 4px; --radius-md: 10px; --radius-lg: 20px;
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, .24);
+  --shadow-2: 0 8px 28px rgba(0, 0, 0, .32);
+  --shadow-3: 0 24px 64px rgba(10, 10, 40, .5);
 
-  /* Tech stack table */
-  table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  th { color: var(--accent); font-weight: 600; white-space: nowrap; }
-  td:first-child { color: var(--text-dim); white-space: nowrap; }
-  tr:hover td { background: rgba(255, 255, 255, 0.02); }
+  /* 动效 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms; --dur-base: 320ms; --dur-slow: 640ms;
+}
 
-  /* Quick start */
-  pre {
-    background: #0d0d1a;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px 24px;
-    overflow-x: auto;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 14px;
-    color: #c8d3f0;
-  }
-  pre .cm { color: #5b667d; }
-  pre .hl { color: var(--accent); }
+/* ============================================================
+   2. 基础与重置
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--fs-md);
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--color-accent); color: #fff; }
 
-  /* Config note */
-  .note {
-    background: rgba(233, 69, 96, 0.08);
-    border: 1px solid rgba(233, 69, 96, 0.3);
-    border-radius: 10px;
-    padding: 16px 20px;
-    font-size: 14px;
-    color: var(--text-dim);
-    margin-top: 24px;
-  }
-  .note strong { color: var(--accent); }
+/* 键盘焦点圈：2px 实线 + 2px 偏移 */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
 
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 28px 0;
-    text-align: center;
-    color: var(--text-dim);
-    font-size: 13px;
-  }
-  footer .license { color: var(--accent); }
+/* 等宽数字：所有数据表与指标 */
+.num, .mono { font-family: "JetBrains Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   3. 氛围层：渐变网格 + 颗粒噪点（fixed，不参与布局）
+   ============================================================ */
+.atmosphere::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, rgba(233, 69, 96, .12), transparent 60%),
+    radial-gradient(50rem 40rem at 100% 0%, rgba(90, 92, 200, .14), transparent 55%);
+}
+.grain::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+main, header, footer { position: relative; z-index: 2; }
+
+/* ============================================================
+   4. 顶部导航：发丝线分隔，等宽小字
+   ============================================================ */
+.nav {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(18, 18, 42, .82);
+  backdrop-filter: blur(12px);
+}
+.nav .brand {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-sm); font-weight: 700; letter-spacing: .08em;
+}
+.nav .brand em { color: var(--color-accent); font-style: normal; }
+.nav .links { display: flex; gap: var(--space-4); font-size: var(--fs-sm); color: var(--color-muted); }
+.nav .links a { padding: var(--space-2) 0; transition: color var(--dur-fast) ease-out; }
+.nav .links a:hover { color: var(--color-accent); }
+
+/* ============================================================
+   5. 首屏：非对称 7/5 网格 + 仪表小窗破格下沉
+   ============================================================ */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-5);
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5) var(--space-6);
+}
+.hero-tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-xs);
+  color: var(--color-accent);
+  letter-spacing: .28em;
+  margin-bottom: var(--space-4);
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-tag::before { content: ""; width: 32px; height: 1px; background: var(--color-accent); }
+.hero h1 {
+  font-size: var(--fs-hero);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-4);
+}
+.hero h1 .en {
+  display: block;
+  font-family: "Anton", "Noto Sans SC", sans-serif;
+  font-weight: 400;
+  font-size: .34em;
+  letter-spacing: .14em;
+  color: var(--color-muted);
+  margin-top: var(--space-3);
+}
+.hero h1 .accent { color: var(--color-accent); }
+.hero .lede {
+  max-width: 30em;
+  color: var(--color-muted);
+  font-size: var(--fs-lg);
+  margin-bottom: var(--space-5);
+}
+.hero-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+
+/* 按钮：≥44px 触达目标，hover 位移 + 阴影抬升 */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  min-height: 48px; padding: 0 32px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-md); font-weight: 700;
+  position: relative; overflow: hidden;
+  transition: transform var(--dur-fast) ease-out, box-shadow var(--dur-fast) ease-out, color var(--dur-fast) ease-out, border-color var(--dur-fast) ease-out;
+}
+.btn-primary { background: var(--color-accent); color: #fff; box-shadow: var(--shadow-2); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(233, 69, 96, .4); }
+.btn-ghost { border: 1px solid var(--color-border-strong); color: var(--color-text); }
+.btn-ghost:hover { border-color: var(--color-accent); color: var(--color-accent); transform: translateY(-2px); }
+.btn .arr { font-family: "JetBrains Mono", monospace; transition: transform var(--dur-fast) ease-out; }
+.btn:hover .arr { transform: translateX(4px); }
+
+/* ---- 仪表小窗：记忆点，破格压住首屏底边 ---- */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+  transform: translateY(24px);   /* 破格：向下一沉，压住区块分界 */
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-xs); letter-spacing: .12em; color: var(--color-muted);
+}
+.dots { display: flex; gap: 6px; }
+.dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--color-border-strong); }
+.dots span:first-child { background: var(--color-accent); }
+.panel table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.panel th {
+  font-family: "JetBrains Mono", monospace; font-weight: 500;
+  font-size: var(--fs-xs); color: var(--color-muted);
+  text-align: left; padding: 10px 20px;
+  border-bottom: 1px solid var(--color-border);
+  letter-spacing: .1em;
+}
+.panel td { padding: 12px 20px; border-bottom: 1px solid var(--color-border); }
+.panel tr:last-child td { border-bottom: none; }
+.panel td.qty { text-align: right; font-weight: 700; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-xs); color: var(--color-muted); }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--color-ok); }
+.status.low::before { background: var(--color-accent); animation: blink 1.6s infinite; }
+.status.low { color: var(--color-accent); }
+@keyframes blink { 50% { opacity: .3; } }
+.panel-foot {
+  padding: 10px 20px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-xs); color: var(--color-muted);
+  border-top: 1px solid var(--color-border);
+  display: flex; justify-content: space-between;
+}
+
+/* ============================================================
+   6. 行情条：无限滚动跑马灯，倾斜 -1deg 增加对角线流动
+   ============================================================ */
+.ticker {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  overflow: hidden;
+  transform: rotate(-1deg) scale(1.02);
+  margin: var(--space-4) 0;
+}
+.ticker-track {
+  display: flex; width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.ticker-track span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-sm); letter-spacing: .18em;
+  color: var(--color-muted);
+  padding: 14px 0; white-space: nowrap;
+}
+.ticker-track b { color: var(--color-accent); font-weight: 400; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ============================================================
+   7. 指标带：等宽大数字 + 发丝线分隔
+   ============================================================ */
+.stats {
+  max-width: 1200px; margin: 0 auto;
+  padding: var(--space-5) var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.stat { padding: 0 var(--space-4); border-left: 1px solid var(--color-border); }
+.stat:first-child { border-left: none; padding-left: 0; }
+.stat .v {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-2xl); font-weight: 700;
+  color: var(--color-text);
+}
+.stat .v small { font-size: .5em; color: var(--color-accent); }
+.stat .k { font-size: var(--fs-sm); color: var(--color-muted); margin-top: var(--space-1); }
+
+/* ============================================================
+   8. 功能台账：编号行式列表，替代均匀卡片网格
+   ============================================================ */
+section.block { max-width: 1200px; margin: 0 auto; padding: var(--space-6) var(--space-5); }
+.block-head { display: flex; align-items: baseline; gap: var(--space-4); margin-bottom: var(--space-5); flex-wrap: wrap; }
+.block-head .no { font-family: "JetBrains Mono", monospace; color: var(--color-accent); font-size: var(--fs-sm); }
+.block-head h2 { font-size: var(--fs-2xl); font-weight: 900; letter-spacing: -0.02em; }
+.block-head .en-sub { font-family: "JetBrains Mono", monospace; font-size: var(--fs-xs); color: var(--color-muted); letter-spacing: .2em; margin-left: auto; }
+
+.ledger { border-top: 1px solid var(--color-border-strong); }
+.row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1.2fr) minmax(0, 2fr) 120px;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-4) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  transition: background var(--dur-fast) ease-out;
+}
+.row::before {          /* hover 时的左侧红色刻度线 */
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--color-accent);
+  transform: scaleY(0); transform-origin: top;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.row:hover { background: rgba(255, 255, 255, .03); }
+.row:hover::before { transform: scaleY(1); }
+.row .idx { font-family: "JetBrains Mono", monospace; font-size: var(--fs-lg); color: var(--color-muted); transition: color var(--dur-fast) ease-out; }
+.row:hover .idx { color: var(--color-accent); }
+.row h3 { font-size: var(--fs-lg); font-weight: 700; }
+.row p { font-size: var(--fs-sm); color: var(--color-muted); }
+.row .tag {
+  justify-self: end;
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fs-xs); letter-spacing: .12em;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+  transition: border-color var(--dur-fast) ease-out, color var(--dur-fast) ease-out;
+}
+.row:hover .tag { border-color: var(--color-accent); color: var(--color-accent); }
+
+/* ============================================================
+   9. 技术栈 + 快速开始：5/7 非对称双栏
+   ============================================================ */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+.spec { border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden; }
+.spec dl { display: grid; grid-template-columns: auto 1fr; font-size: var(--fs-sm); }
+.spec dt {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--color-muted);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+.spec dt::after { content: " ·"; color: var(--color-accent); }
+.spec dd { padding: 14px 20px; border-bottom: 1px solid var(--color-border); }
+.spec dl > :nth-last-child(-n+2) { border-bottom: none; }
+
+.terminal {
+  background: #0b0b1e;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+.terminal-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.terminal-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--color-border-strong); }
+.terminal-bar i:first-child { background: var(--color-accent); }
+.terminal-bar span { margin-left: auto; font-family: "JetBrains Mono", monospace; font-size: var(--fs-xs); color: var(--color-muted); }
+.terminal pre {
+  padding: var(--space-4);
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: var(--fs-sm);
+  line-height: 2;
+  color: #c8d3f0;
+  overflow-x: auto;
+}
+.terminal .cm { color: #5b667d; }
+.terminal .p { color: var(--color-accent); }
+.note {
+  margin-top: var(--space-3);
+  border: 1px solid rgba(233, 69, 96, .35);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+.note strong { color: var(--color-text); }
+.note code { font-family: "JetBrains Mono", monospace; color: var(--color-accent); }
+
+/* ============================================================
+   10. 页脚
+   ============================================================ */
+footer {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-6);
+}
+.foot {
+  max-width: 1200px; margin: 0 auto;
+  padding: var(--space-5);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3);
+  color: var(--color-muted); font-size: var(--fs-sm);
+}
+.foot .mono { font-size: var(--fs-xs); letter-spacing: .1em; }
+
+/* ============================================================
+   11. 动效：入场序列（错峰）+ 滚动触发 + 降级
+   ============================================================ */
+.reveal { opacity: 0; transform: translateY(24px); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+.reveal.d1.in { transition-delay: 80ms; }
+.reveal.d2.in { transition-delay: 160ms; }
+.reveal.d3.in { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .ticker-track { animation: none; }
+  .status.low::before { animation: none; }
+  .btn:hover, .btn-ghost:hover { transform: none; }
+}
+
+/* ============================================================
+   12. 响应式：900 / 480 两档
+   ============================================================ */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding-top: var(--space-6); }
+  .panel { transform: none; }
+  .stats { grid-template-columns: repeat(2, 1fr); gap: var(--space-4) 0; }
+  .stat:nth-child(3) { border-left: none; padding-left: 0; }
+  .split { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 48px 1fr 92px; }
+  .row p { grid-column: 2 / 3; }
+  .nav .links { display: none; }
+}
+@media (max-width: 480px) {
+  .stats { grid-template-columns: 1fr; }
+  .stat { border-left: none; padding-left: 0; border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+  .stat:first-child { border-top: none; }
+  .block-head .en-sub { margin-left: 0; width: 100%; }
+}
 </style>
 </head>
-<body>
 
+<body class="grain">
+<div class="atmosphere"></div>
+
+<!-- ===== 顶部导航 ===== -->
 <header>
-  <div class="container">
-    <span class="badge">PYTHON · TKINTER · SQLITE</span>
-    <div class="logo">ERP</div>
-    <h1>进销存管理系统</h1>
-    <p class="sub">一套面向中小企业的轻量级进销存解决方案 —— 进货、出货、库存、统计一体化管理，支持 Excel 导出与打印预览。</p>
-    <div class="actions">
-      <a class="btn btn-primary" href="#quickstart">快速开始</a>
-      <a class="btn btn-ghost" href="#features">功能特性</a>
+  <nav class="nav" aria-label="主导航">
+    <a class="brand" href="#top">LEDGER<em>_SYS</em></a>
+    <div class="links">
+      <a href="#features">功能台账</a>
+      <a href="#stack">技术规格</a>
+      <a href="#quickstart">快速开始</a>
     </div>
+  </nav>
+
+  <!-- ===== 首屏：非对称 7/5 ===== -->
+  <div class="hero" id="top">
+    <div>
+      <p class="hero-tag reveal">PYTHON · TKINTER · SQLITE</p>
+      <h1 class="reveal d1">
+        进货 · 出货 · 库存<br>
+        <span class="accent">一本账</span>管到底
+        <span class="en">INVENTORY LEDGER SYSTEM</span>
+      </h1>
+      <p class="lede reveal d2">
+        面向中小企业的轻量级进销存桌面系统——数据存在本地 SQLite，不联网、不订阅、不丢账。
+      </p>
+      <div class="hero-actions reveal d3">
+        <a class="btn btn-primary" href="#quickstart">快速开始 <span class="arr">-&gt;</span></a>
+        <a class="btn btn-ghost" href="#features">查看功能台账</a>
+      </div>
+    </div>
+
+    <!-- 仪表小窗：记忆点，破格压住首屏底边 -->
+    <aside class="panel reveal d2" aria-label="库存监控示意">
+      <div class="panel-head">
+        <span>STOCK_MONITOR / 实时库存</span>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>商品 SKU</th><th>状态</th><th style="text-align:right">结存</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">A-1024 打印纸 A4</td><td><span class="status">正常</span></td><td class="qty num">128</td></tr>
+          <tr><td class="mono">B-0311 硒鼓 HP-88A</td><td><span class="status low">低库存</span></td><td class="qty num">6</td></tr>
+          <tr><td class="mono">C-2087 订书机 中号</td><td><span class="status">正常</span></td><td class="qty num">54</td></tr>
+          <tr><td class="mono">D-0098 档案盒 55mm</td><td><span class="status">正常</span></td><td class="qty num">230</td></tr>
+        </tbody>
+      </table>
+      <div class="panel-foot">
+        <span>THRESHOLD ≤ 10</span>
+        <span>UPDATED 09-25 23:29</span>
+      </div>
+    </aside>
   </div>
 </header>
 
-<section id="features">
-  <div class="container">
-    <h2>核心功能</h2>
-    <div class="grid">
-      <div class="card">
-        <div class="icon">📥</div>
+<main>
+  <!-- ===== 行情跑马灯 ===== -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>进货 INBOUND <b>/</b> 出货 OUTBOUND <b>/</b> 库存 STOCK <b>/</b> 对账 LEDGER <b>/</b> 报表 EXPORT <b>/</b> 打印 PRINT <b>/</b>&nbsp;</span>
+      <span>进货 INBOUND <b>/</b> 出货 OUTBOUND <b>/</b> 库存 STOCK <b>/</b> 对账 LEDGER <b>/</b> 报表 EXPORT <b>/</b> 打印 PRINT <b>/</b>&nbsp;</span>
+    </div>
+  </div>
+
+  <!-- ===== 指标带 ===== -->
+  <div class="stats">
+    <div class="stat reveal"><div class="v num">06<small> 模块</small></div><div class="k">进销存核心功能全覆盖</div></div>
+    <div class="stat reveal d1"><div class="v num">100<small> %</small></div><div class="k">本地存储 · 零订阅费用</div></div>
+    <div class="stat reveal d2"><div class="v num">1<small> 个文件</small></div><div class="k">inventory.db 随处迁移备份</div></div>
+    <div class="stat reveal d3"><div class="v num">3.7<small>+</small></div><div class="k">Python 版本要求</div></div>
+  </div>
+
+  <!-- ===== 功能台账 ===== -->
+  <section class="block" id="features">
+    <div class="block-head reveal">
+      <span class="no num">01</span>
+      <h2>功能台账</h2>
+      <span class="en-sub">FEATURE LEDGER</span>
+    </div>
+    <div class="ledger">
+      <div class="row reveal">
+        <span class="idx num">01</span>
         <h3>进货管理</h3>
-        <p>记录商品进货信息，录入后自动更新库存数量，支持历史进货记录追溯。</p>
+        <p>录入进货单，商品数量自动累加入库，历史进货全程可追溯。</p>
+        <span class="tag">INBOUND</span>
       </div>
-      <div class="card">
-        <div class="icon">📤</div>
+      <div class="row reveal">
+        <span class="idx num">02</span>
         <h3>出货管理</h3>
-        <p>管理商品出库流程，出货时实时扣减库存，防止超卖。</p>
+        <p>出库实时扣减库存，库存不足时直接拦截，杜绝超卖错账。</p>
+        <span class="tag">OUTBOUND</span>
       </div>
-      <div class="card">
-        <div class="icon">📦</div>
-        <h3>库存管理</h3>
-        <p>实时查看当前库存状态，低库存自动预警（默认阈值 10 件）。</p>
+      <div class="row reveal">
+        <span class="idx num">03</span>
+        <h3>库存监控</h3>
+        <p>结存一目了然，低于阈值（默认 10 件）自动红色预警。</p>
+        <span class="tag">STOCK</span>
       </div>
-      <div class="card">
-        <div class="icon">🔍</div>
+      <div class="row reveal">
+        <span class="idx num">04</span>
         <h3>查询统计</h3>
-        <p>按年份维度查询进货、出货记录与库存情况，快速掌握经营数据。</p>
+        <p>按年份维度检索进销记录与库存快照，经营状况一查便知。</p>
+        <span class="tag">LEDGER</span>
       </div>
-      <div class="card">
-        <div class="icon">📊</div>
-        <h3>数据导出</h3>
-        <p>查询结果一键导出为 Excel 格式（openpyxl），便于二次分析与存档。</p>
+      <div class="row reveal">
+        <span class="idx num">05</span>
+        <h3>Excel 导出</h3>
+        <p>查询结果一键导出 xlsx（openpyxl），便于对账与二次分析。</p>
+        <span class="tag">EXPORT</span>
       </div>
-      <div class="card">
-        <div class="icon">🖨️</div>
+      <div class="row reveal">
+        <span class="idx num">06</span>
         <h3>打印预览</h3>
-        <p>内置数据打印预览功能，所见即所得，输出规范的业务单据。</p>
+        <p>内置打印预览，所见即所得，直接输出规范业务单据。</p>
+        <span class="tag">PRINT</span>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section>
-  <div class="container">
-    <h2>技术栈</h2>
-    <table>
-      <tr><th>类别</th><th>说明</th></tr>
-      <tr><td>语言</td><td>Python 3.7+</td></tr>
-      <tr><td>GUI 框架</td><td>Tkinter / ttk</td></tr>
-      <tr><td>数据库</td><td>SQLite3（inventory.db）</td></tr>
-      <tr><td>数据处理</td><td>openpyxl（Excel 读写）</td></tr>
-      <tr><td>打包工具</td><td>PyInstaller（支持单文件 / 目录模式）</td></tr>
-    </table>
-  </div>
-</section>
-
-<section id="quickstart">
-  <div class="container">
-    <h2>快速开始</h2>
-<pre><span class="cm"># 1. 安装依赖</span>
-pip install -r requirements.txt
-
-<span class="cm"># 2. 运行主程序</span>
-python inventory_system.py
-
-<span class="cm"># 3. Windows 用户可直接双击 START.bat（自动检测环境并补装依赖）</span>
-
-<span class="cm"># 4. 打包为独立可执行文件（可选）</span>
-python build.py --mode single --windowed --clean</pre>
-    <div class="note">
-      <strong>默认登录：</strong>管理员账号 <code>admin</code>，初始密码 <code>123456</code>。
-      登录后请及时修改密码；配置文件为 <code>system_config.json</code>。
+  <!-- ===== 技术栈 + 快速开始 ===== -->
+  <section class="block" id="stack">
+    <div class="block-head reveal">
+      <span class="no num">02</span>
+      <h2>技术规格与启动</h2>
+      <span class="en-sub">SPEC &amp; QUICKSTART</span>
     </div>
-  </div>
-</section>
+    <div class="split">
+      <div class="spec reveal">
+        <dl>
+          <dt>语言</dt><dd>Python 3.7+</dd>
+          <dt>GUI</dt><dd>Tkinter / ttk</dd>
+          <dt>数据库</dt><dd>SQLite3（inventory.db）</dd>
+          <dt>数据处理</dt><dd>openpyxl</dd>
+          <dt>打包</dt><dd>PyInstaller · 单文件 / 目录</dd>
+          <dt>平台</dt><dd>Windows 7 / 8 / 10 / 11</dd>
+        </dl>
+      </div>
+      <div id="quickstart">
+        <div class="terminal reveal d1">
+          <div class="terminal-bar"><i></i><i></i><i></i><span>cmd.exe</span></div>
+          <pre><span class="cm"># 1 — 安装依赖</span>
+<span class="p">&gt;</span> pip install -r requirements.txt
 
+<span class="cm"># 2 — 运行主程序</span>
+<span class="p">&gt;</span> python inventory_system.py
+
+<span class="cm"># 3 — Windows 用户：直接双击 START.bat
+#     （自动检测 Python 并补装缺失依赖）</span>
+
+<span class="cm"># 4 — 打包为独立 exe（可选）</span>
+<span class="p">&gt;</span> python build.py --mode single --windowed --clean</pre>
+        </div>
+        <div class="note reveal d2">
+          <strong>默认登录</strong> — 管理员账号 <code>admin</code>，初始密码 <code>123456</code>，
+          首次登录后请立即修改。运行时配置写入 <code>system_config.json</code>。
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== 页脚 ===== -->
 <footer>
-  <div class="container">
-    进销存管理系统 · MIT License · Powered by Python &amp; Tkinter
+  <div class="foot">
+    <span>进销存管理系统 · 一本账管到底</span>
+    <span class="mono">MIT LICENSE / POWERED BY PYTHON &amp; TKINTER</span>
   </div>
 </footer>
 
+<script>
+// 滚动触发入场：只动 opacity 与 translateY，进入视口即揭示
+(function () {
+  var els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(function (el) { el.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.15 });
+  els.forEach(function (el) { io.observe(el); });
+})();
+</script>
 </body>
 </html>
